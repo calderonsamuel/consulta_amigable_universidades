@@ -3,6 +3,33 @@ library(httr)
 library(rvest)
 library(janitor)
 
+library(httr2)
+
+request("https://apps5.mineco.gob.pe") |>
+  req_url_path_append("transparencia") |>
+  req_url_path_append("mensual") |>
+  req_url_path_append("Navegar_6.aspx") |>
+  req_url_query(`_tgt` = "json", `_uhc` = "yes", cpage = 1, psize = 400) |>
+  req_url_query(y = 2019)
+  req_perform() %>%
+  resp_body_html()
+
+# api general
+set_url_query <- function(year, ...) {
+
+  base_url <- parse_url("https://apps5.mineco.gob.pe/transparencia/mensual/Navegar_6.aspx")
+  base_url$query <- list(
+    `_tgt` = "xls",
+    `_uhc` = "yes",
+    cpage = 1L,
+    psize = 400L,
+    y = year,
+    ...)
+
+  build_url(base_url)
+}
+
+# delimitado a pliego educación
 set_url_query2 <- function(year, ...) {
 
   base_url <- parse_url("https://apps5.mineco.gob.pe/transparencia/mensual/Navegar_6.aspx")
@@ -12,7 +39,7 @@ set_url_query2 <- function(year, ...) {
     cpage = 1L,
     psize = 400L,
     y = year,
-    `0` = NULL,
+    `0` = "",
     `1` = "E",
     `2` = 10L,
     ...)
@@ -20,6 +47,8 @@ set_url_query2 <- function(year, ...) {
   build_url(base_url)
 }
 
+set_url_query2(year = 2019)
+set_url_query(year = 2019)
 
 get_dl_data <- function(get_data, id) {
   get_data %>%
@@ -28,6 +57,15 @@ get_dl_data <- function(get_data, id) {
     html_element(id) %>%
     html_table()
 }
+
+set_url_query(year = 2019, `0` = "", `1` = "E", `2` = "") %>%
+  GET(timeout(20)) %>%
+  read_html() %>%
+  html_element("body") %>%
+  html_element(".MapTable") %>%
+  html_table()
+
+
 
 api_ue_data <- function(year, ...) {
   new_url <- set_url_query2(year, ...)
@@ -42,6 +80,8 @@ api_ue_data <- function(year, ...) {
     set_names(data_names) %>%
     mutate(año = year)
 }
+
+api_ue_data(2020)
 
 # Unidades ejecutoras
 
